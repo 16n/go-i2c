@@ -11,9 +11,10 @@ package i2c
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -25,9 +26,7 @@ const (
 type I2C struct {
 	rc *os.File
 	// Logger
-	log *log.Logger
-	// Enable verbose output
-	Debug bool
+	log *logrus.Logger
 }
 
 // NewI2C opens a connection to an i2c device.
@@ -40,7 +39,13 @@ func NewI2C(addr uint8, bus int) (*I2C, error) {
 		return nil, err
 	}
 	v := &I2C{rc: f}
+	v.log = logrus.New()
 	return v, nil
+}
+
+//SetLogger set logger
+func (v *I2C) SetLogger(log *logrus.Logger) {
+	v.log = log.WithField("package", "go-i2c").Logger
 }
 
 func (v *I2C) write(buf []byte) (int, error) {
@@ -50,9 +55,7 @@ func (v *I2C) write(buf []byte) (int, error) {
 // WriteBytes sends buf to the remote i2c device. The interpretation of
 // the message is implementation dependant.
 func (v *I2C) WriteBytes(buf []byte) (int, error) {
-	if v.Debug == true {
-		lg.Debugf("Write %d hex bytes: [%+v]", len(buf), hex.EncodeToString(buf))
-	}
+	v.log.Debugf("Write %d hex bytes: [%+v]", len(buf), hex.EncodeToString(buf))
 	return v.write(buf)
 }
 
@@ -70,9 +73,7 @@ func (v *I2C) ReadBytes(buf []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	if v.Debug == true {
-		lg.Debugf("Read %d hex bytes: [%+v]", len(buf), hex.EncodeToString(buf))
-	}
+	v.log.Debugf("Read %d hex bytes: [%+v]", len(buf), hex.EncodeToString(buf))
 	return n, nil
 }
 
@@ -85,9 +86,7 @@ func (v *I2C) Close() error {
 // Read count of n byte's sequence from i2c device
 // starting from reg address.
 func (v *I2C) ReadRegBytes(reg byte, n int) ([]byte, int, error) {
-	if v.Debug == true {
-		lg.Debugf("Read %d bytes starting from reg 0x%0X...", n, reg)
-	}
+	v.log.Debugf("Read %d bytes starting from reg 0x%0X...", n, reg)
 
 	_, err := v.WriteBytes([]byte{reg})
 	if err != nil {
@@ -115,10 +114,7 @@ func (v *I2C) ReadRegU8(reg byte) (byte, error) {
 		return 0, err
 	}
 
-	if v.Debug == true {
-		lg.Debugf("Read U8 %d from reg 0x%0X", buf[0], reg)
-	}
-
+	v.log.Debugf("Read U8 %d from reg 0x%0X", buf[0], reg)
 	return buf[0], nil
 }
 
@@ -131,10 +127,7 @@ func (v *I2C) WriteRegU8(reg byte, value byte) error {
 		return err
 	}
 
-	if v.Debug == true {
-		lg.Debugf("Write U8 %d to reg 0x%0X", value, reg)
-	}
-
+	v.log.Debugf("Write U8 %d to reg 0x%0X", value, reg)
 	return nil
 }
 
@@ -153,10 +146,7 @@ func (v *I2C) ReadRegU16BE(reg byte) (uint16, error) {
 	}
 	w := uint16(buf[0])<<8 + uint16(buf[1])
 
-	if v.Debug == true {
-		lg.Debugf("Read U16 %d from reg 0x%0X", w, reg)
-	}
-
+	v.log.Debugf("Read U16 %d from reg 0x%0X", w, reg)
 	return w, nil
 }
 
@@ -188,10 +178,7 @@ func (v *I2C) ReadRegS16BE(reg byte) (int16, error) {
 	}
 	w := int16(buf[0])<<8 + int16(buf[1])
 
-	if v.Debug == true {
-		lg.Debugf("Read S16 %d from reg 0x%0X", w, reg)
-	}
-
+	v.log.Debugf("Read S16 %d from reg 0x%0X", w, reg)
 	return w, nil
 }
 
@@ -219,10 +206,7 @@ func (v *I2C) WriteRegU16BE(reg byte, value uint16) error {
 		return err
 	}
 
-	if v.Debug == true {
-		lg.Debugf("Write U16 %d to reg 0x%0X", value, reg)
-	}
-
+	v.log.Debugf("Write U16 [%+v] to reg 0x%0X", hex.EncodeToString(buf), reg)
 	return nil
 }
 
@@ -244,10 +228,7 @@ func (v *I2C) WriteRegS16BE(reg byte, value int16) error {
 		return err
 	}
 
-	if v.Debug == true {
-		lg.Debugf("Write S16 %d to reg 0x%0X", value, reg)
-	}
-
+	v.log.Debugf("Write S16 %d to reg 0x%0X", value, reg)
 	return nil
 }
 
